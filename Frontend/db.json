@@ -1,0 +1,46 @@
+{
+  "users": [
+    {
+      "id": "e6c5",
+      "firstName": "ASWIN",
+      "lastName": "S",
+      "mobile": "45621",
+      "email": "a1@gmail.com",
+      "password": "a"
+    },
+    {
+      "id": "7fa2",
+      "firstName": "aas",
+      "lastName": "saa",
+      "mobile": "456",
+      "email": "fgt@gmail.com",
+      "password": "gft"
+    }
+  ],
+  "admins": [
+    {
+      "id": "a993",
+      "firstName": "harish",
+      "lastName": "s",
+      "mobile": "455",
+      "email": "h@gmail.com",
+      "password": "as"
+    },
+    {
+      "id": "9c4c",
+      "firstName": "ASWIN",
+      "lastName": "S",
+      "mobile": "9488",
+      "email": "aswin@gmail.com",
+      "password": "aswin"
+    }
+  ],
+  "orders": [
+    {
+      "id": "d34b",
+      "orderId": 1722322572948,
+      "courseName": "Introduction to Coding",
+      "status": "pending"
+    }
+  ]
+}
