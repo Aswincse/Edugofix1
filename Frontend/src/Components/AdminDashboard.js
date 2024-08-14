@@ -7,24 +7,25 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [newUser, setNewUser] = useState({
-    firstName: '',
-    lastName: '',
-    mobile: '',
+    name: '',
     email: '',
-    password: ''
+    password: '',
+    roles: 'ROLE_USER'
   });
   const [admins, setAdmins] = useState([]);
   const [newAdmin, setNewAdmin] = useState({
-    firstName: '',
-    lastName: '',
-    mobile: '',
+    name: '',
     email: '',
-    password: ''
+    password: '',
+    roles: 'ROLE_ADMIN'
   });
   const [activeLink, setActiveLink] = useState('/admin-dashboard');
   const [popupMessage, setPopupMessage] = useState('');
   const [showPopup, setShowPopup] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Retrieve the token from localStorage
+  const token = localStorage.getItem('authToken');
 
   useEffect(() => {
     fetchUsers();
@@ -34,7 +35,14 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:8080/users');
+      const response = await fetch('http://localhost:8080/admin/get/users', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
       if (!response.ok) throw new Error('Network response was not ok.');
       const data = await response.json();
       setUsers(data);
@@ -45,7 +53,14 @@ const AdminDashboard = () => {
 
   const fetchAdmins = async () => {
     try {
-      const response = await fetch('http://localhost:8080/admins');
+      const response = await fetch('http://localhost:8080/admins', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
       if (!response.ok) throw new Error('Network response was not ok.');
       const data = await response.json();
       setAdmins(data);
@@ -56,15 +71,21 @@ const AdminDashboard = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('http://localhost:8080/orders');
+      const response = await fetch('http://localhost:8080/admin/get/orders', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) throw new Error('Network response was not ok.');
       const data = await response.json();
-      console.log('Fetched Orders:', data); // Log data to check courseName
       setOrders(data);
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
   };
-  
 
   const showPopupMessage = (message) => {
     setPopupMessage(message);
@@ -84,50 +105,72 @@ const AdminDashboard = () => {
     setNewUser((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleNewAdminChange = (e) => {
+    const { name, value } = e.target;
+    setNewAdmin((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSave = async (id) => {
+    const token = localStorage.getItem('authToken'); // Retrieve the access token from localStorage
+    
     try {
-      await fetch(`http://localhost:8080/users/${id}`, {
+      await fetch(`http://localhost:8080/admin/edituser/${id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(editingUser)
       });
+  
       setEditingUser(null);
       fetchUsers();
       showPopupMessage('User saved successfully!');
     } catch (error) {
       console.error('Error saving user:', error);
+      showPopupMessage('Error saving user.');
     }
   };
+  
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`http://localhost:8080/users/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(`http://localhost:8080/admin/deleteuser/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-      fetchUsers();
-      showPopupMessage('User deleted successfully!');
+
+      if (response.ok) {
+        fetchUsers();
+        showPopupMessage('User deleted successfully!');
+      } else {
+        const errorData = await response.json();
+        showPopupMessage(`Error deleting user: ${errorData.message || 'Unknown error'}`);
+      }
     } catch (error) {
       console.error('Error deleting user:', error);
+      showPopupMessage(`Error deleting user: ${error.message}`);
     }
   };
 
   const handleAddUser = async () => {
     try {
-      await fetch('http://localhost:8080/users', {
+      await fetch('http://localhost:8080/auth/addNewUser', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(newUser)
       });
       setNewUser({
-        firstName: '',
-        lastName: '',
-        mobile: '',
+        name: '',
         email: '',
-        password: ''
+        password: '',
+        roles: 'ROLE_USER'
       });
       fetchUsers();
       showPopupMessage('User added successfully!');
@@ -138,19 +181,20 @@ const AdminDashboard = () => {
 
   const handleAddAdmin = async () => {
     try {
-      await fetch('http://localhost:8080/admins', {
+      await fetch('http://localhost:8080/auth/addNewUser', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(newAdmin)
       });
+
       setNewAdmin({
-        firstName: '',
-        lastName: '',
-        mobile: '',
+        name: '',
         email: '',
-        password: ''
+        password: '',
+        roles: 'ROLE_ADMIN'
       });
       fetchAdmins();
       showPopupMessage('Admin added successfully!');
@@ -160,22 +204,28 @@ const AdminDashboard = () => {
   };
 
   const handleApproveOrder = async (id) => {
+    const orderToApprove = orders.find(order => order.id === id);
+    const approvedOrder = { ...orderToApprove, status: 'Approved' };
+
     try {
-      await fetch(`http://localhost:8080/orders/${id}`, {
+      await fetch(`http://localhost:8080/admin/changestatus/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'Approved' })
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id, status: 'Approved' })
       });
-      fetchOrders(); // Fetch orders again to reflect the change
+
+      setOrders(orders.map(order => (order.id === id ? approvedOrder : order)));
       showPopupMessage('Order approved successfully!');
     } catch (error) {
       console.error('Error approving order:', error);
     }
   };
-  
 
   const handleSignOut = () => {
-    localStorage.removeItem('adminToken');
+    localStorage.removeItem('authToken');
     window.location.href = '/login';
   };
 
@@ -188,7 +238,9 @@ const AdminDashboard = () => {
       <nav className="top-navbar23">
         <div className="navbar-content23">
           <span className="navbar-title23">Admin Dashboard</span>
-          <button className="logout-button23" onClick={handleSignOut}><FaSignOutAlt className="logout-icon" />Logout</button>
+          <button className="logout-button23" onClick={handleSignOut}>
+            <FaSignOutAlt className="logout-icon" /> Logout
+          </button>
         </div>
       </nav>
       <div className="dashboard-content23">
@@ -200,7 +252,7 @@ const AdminDashboard = () => {
                 className={activeLink === '/admin-dashboard' ? 'active' : ''}
                 onClick={() => handleLinkClick('/admin-dashboard')}
               >
-                User Management
+                User/Admin Management
               </a>
             </li>
             <li>
@@ -235,53 +287,33 @@ const AdminDashboard = () => {
         <div className="main-content23">
           {activeLink === '/admin-dashboard' && (
             <div className="user-list23">
-              <h3>Users</h3>
+              <h2>User Management</h2>
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Mobile</th>
+                    <th>Name</th>
                     <th>Email</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(user => (
+                  {users.map((user) => (
                     <tr key={user.id}>
                       {editingUser?.id === user.id ? (
                         <>
-                          <td>{user.id}</td>
                           <td>
                             <input
                               type="text"
-                              name="firstName"
-                              value={editingUser.firstName || ''}
+                              name="name"
+                              value={editingUser.name}
                               onChange={handleInputChange}
                             />
                           </td>
                           <td>
                             <input
                               type="text"
-                              name="lastName"
-                              value={editingUser.lastName || ''}
-                              onChange={handleInputChange}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="text"
-                              name="mobile"
-                              value={editingUser.mobile || ''}
-                              onChange={handleInputChange}
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="email"
                               name="email"
-                              value={editingUser.email || ''}
+                              value={editingUser.email}
                               onChange={handleInputChange}
                             />
                           </td>
@@ -292,10 +324,7 @@ const AdminDashboard = () => {
                         </>
                       ) : (
                         <>
-                          <td>{user.id}</td>
-                          <td>{user.firstName}</td>
-                          <td>{user.lastName}</td>
-                          <td>{user.mobile}</td>
+                          <td>{user.name}</td>
                           <td>{user.email}</td>
                           <td>
                             <button onClick={() => setEditingUser(user)}>Edit</button>
@@ -310,143 +339,86 @@ const AdminDashboard = () => {
             </div>
           )}
           {activeLink === '/admin-add-user' && (
-            <div className="add-user23">
-              <h3>Add New User</h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAddUser();
-                }}
-              >
-                <input
-                  type="text"
-                  name="firstName"
-                  placeholder="First Name"
-                  value={newUser.firstName}
-                  onChange={handleNewUserChange}
-                  required
-                />
-                <input
-                  type="text"
-                  name="lastName"
-                  placeholder="Last Name"
-                  value={newUser.lastName}
-                  onChange={handleNewUserChange}
-                  required
-                />
-                <input
-                  type="text"
-                  name="mobile"
-                  placeholder="Mobile"
-                  value={newUser.mobile}
-                  onChange={handleNewUserChange}
-                  required
-                />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  value={newUser.email}
-                  onChange={handleNewUserChange}
-                  required
-                />
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Password"
-                  value={newUser.password}
-                  onChange={handleNewUserChange}
-                  required
-                />
-                <button type="submit">Add User</button>
-              </form>
+            <div className="add-user-form23">
+              <h2>Add New User</h2>
+              <input
+                type="text"
+                name="name"
+                placeholder="Name"
+                value={newUser.name}
+                onChange={handleNewUserChange}
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={newUser.email}
+                onChange={handleNewUserChange}
+              />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={newUser.password}
+                onChange={handleNewUserChange}
+              />
+              <button onClick={handleAddUser}>Add User</button>
             </div>
           )}
           {activeLink === '/admin-add-admin' && (
-            <div className="add-admin23">
-              <h3>Add New Admin</h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAddAdmin();
-                }}
-              >
-                <input
-                  type="text"
-                  name="firstName"
-                  placeholder="First Name"
-                  value={newAdmin.firstName}
-                  onChange={(e) => setNewAdmin((prev) => ({ ...prev, firstName: e.target.value }))}
-                  required
-                />
-                <input
-                  type="text"
-                  name="lastName"
-                  placeholder="Last Name"
-                  value={newAdmin.lastName}
-                  onChange={(e) => setNewAdmin((prev) => ({ ...prev, lastName: e.target.value }))}
-                  required
-                />
-                <input
-                  type="text"
-                  name="mobile"
-                  placeholder="Mobile"
-                  value={newAdmin.mobile}
-                  onChange={(e) => setNewAdmin((prev) => ({ ...prev, mobile: e.target.value }))}
-                  required
-                />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  value={newAdmin.email}
-                  onChange={(e) => setNewAdmin((prev) => ({ ...prev, email: e.target.value }))}
-                  required
-                />
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Password"
-                  value={newAdmin.password}
-                  onChange={(e) => setNewAdmin((prev) => ({ ...prev, password: e.target.value }))}
-                  required
-                />
-                <button type="submit">Add Admin</button>
-              </form>
+            <div className="add-admin-form23">
+              <h2>Add New Admin</h2>
+              <input
+                type="text"
+                name="name"
+                placeholder="Name"
+                value={newAdmin.name}
+                onChange={handleNewAdminChange}
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={newAdmin.email}
+                onChange={handleNewAdminChange}
+              />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={newAdmin.password}
+                onChange={handleNewAdminChange}
+              />
+              <button onClick={handleAddAdmin}>Add Admin</button>
             </div>
           )}
           {activeLink === '/admin-manage-orders' && (
-  <div className="manage-orders23">
-    <h3>Orders</h3>
-    {loading ? <p>Loading...</p> : (
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Course Name</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map(order => (
-            <tr key={order.id}>
-              <td>{order.id}</td>
-              <td>{order.courseName}</td> {/* Ensure this is correctly mapped */}
-              <td>{order.status}</td>
-              <td>
-                {order.status !== 'Approved' && (
-                  <button onClick={() => handleApproveOrder(order.id)}>Approve</button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-  </div>
-)}
-
+            <div className="order-list23">
+              <h2>Manage Orders</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order.id}>
+                      <td>{order.id}</td>
+                      <td>{order.status}</td>
+                      <td>
+                        {order.status === 'Pending' && (
+                          <button onClick={() => handleApproveOrder(order.id)}>Approve</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
       {showPopup && <div className="popup-message23">{popupMessage}</div>}

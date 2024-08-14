@@ -6,6 +6,7 @@ const Payment = () => {
   const [cardName, setCardName] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const handleCardNumberChange = (e) => {
     const value = e.target.value.replace(/\s+/g, ''); // Remove spaces
@@ -38,6 +39,13 @@ const Payment = () => {
     return date.slice(0, 2) + '/' + date.slice(2); // MM/YY
   };
 
+  const handlePayNow = () => {
+    // Simulate a payment process
+    setTimeout(() => {
+      setPaymentSuccess(true);
+    }, 1000); // Simulate a delay
+  };
+
   return (
     <div className="payment-main-container">
       <div className="payment-container">
@@ -52,7 +60,7 @@ const Payment = () => {
           </div>
         </div>
         <div className="payment-form">
-          <h2>Payment Information</h2>
+          <h2 id='h2pay'>Payment Information</h2>
           <div className="form-group">
             <label htmlFor="cardNumber">Card Number</label>
             <input
@@ -72,6 +80,7 @@ const Payment = () => {
               value={cardName}
               onChange={handleCardNameChange}
               placeholder="Enter your name"
+              required
             />
           </div>
           <div className="form-group">
@@ -83,6 +92,7 @@ const Payment = () => {
               value={formatExpiryDate(expiryDate)}
               onChange={handleExpiryDateChange}
               placeholder="MM/YY"
+              required
             />
           </div>
           <div className="form-group">
@@ -96,6 +106,14 @@ const Payment = () => {
               placeholder="CVV"
             />
           </div>
+          <button className="pay-now-btn" onClick={handlePayNow}>Pay Now</button> {/* Pay Now button */}
+          {paymentSuccess && (
+            <div className="popup-message23">
+              <div className="success-message">
+                Payment Successful!
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

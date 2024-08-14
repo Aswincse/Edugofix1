@@ -4,46 +4,59 @@ import axios from 'axios';
 import './RegisterForm.css';
 
 const RegisterForm = () => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [mobile, setMobile] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [registrationMessage, setRegistrationMessage] = useState('');
+  const [showPopup, setShowPopup] = useState(false);
+  const roles = "ROLE_USER";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       setRegistrationMessage('Passwords do not match');
+      setShowPopup(true);
+      setTimeout(() => {
+        setShowPopup(false);
+      }, 2000);
       return;
     }
 
-    const userData = { firstName, lastName, mobile, email, password };
+    const userData = { name, password, email, roles };
 
     try {
-      const response = await axios.post('http://localhost:8080/users', userData);
-      setRegistrationMessage(response.data.message);
-      // Clear form fields (optional)
-      setFirstName('');
-      setLastName('');
-      setMobile('');
+      const response = await axios.post('http://localhost:8080/auth/addNewUser', userData);
+      setRegistrationMessage('Registration successful!');
+      setShowPopup(true);
+
+      // Clear form fields
+      setName('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+
+      setTimeout(() => {
+        setShowPopup(false);
+      }, 2000); // 2 seconds before hiding the popup
     } catch (error) {
+      console.error('Network error:', error);
+
+      let errorMessage = 'Registration failed. Please try again.';
       if (error.response) {
         const { message } = error.response.data;
-        if (message.includes('duplicate phone')) {
-          setRegistrationMessage('Phone number already exists.');
-        } else if (message.includes('duplicate email')) {
-          setRegistrationMessage('Email address already in use.');
-        } else {
-          setRegistrationMessage('Registration failed. Please try again.');
+        if (message.includes('duplicate email')) {
+          errorMessage = 'Email address already in use.';
         }
       } else {
-        setRegistrationMessage('Network error. Please try again.');
+        errorMessage = 'Network error. Please try again.';
       }
+      setRegistrationMessage(errorMessage);
+      setShowPopup(true);
+
+      setTimeout(() => {
+        setShowPopup(false);
+      }, 2000);
     }
   };
 
@@ -54,25 +67,9 @@ const RegisterForm = () => {
         <input
           className="register-input"
           type="text"
-          placeholder="First Name*"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          required
-        />
-        <input
-          className="register-input"
-          type="text"
-          placeholder="Last Name*"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          required
-        />
-        <input
-          className="register-input"
-          type="text"
-          placeholder="Mobile No*"
-          value={mobile}
-          onChange={(e) => setMobile(e.target.value)}
+          placeholder="Name*"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           required
         />
         <input
@@ -105,10 +102,12 @@ const RegisterForm = () => {
         <div className="register-signin-link">
           Already have an account? <Link to="/login">Login</Link>
         </div>
-        {registrationMessage && (
-          <p className="register-message-error">{registrationMessage}</p>
-        )}
       </form>
+      {registrationMessage && (
+        <div className={`register-popup-message ${showPopup ? '' : 'hidden'} ${registrationMessage.includes('successful') ? '' : 'error'}`}>
+          {registrationMessage}
+        </div>
+      )}
     </div>
   );
 };

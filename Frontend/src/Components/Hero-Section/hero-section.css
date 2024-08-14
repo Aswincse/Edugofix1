@@ -1,0 +1,27 @@
+.hero-section {
+  padding: 0px 0;
+  margin-top: -70px;
+}
+
+.hero__content h2 {
+  font-weight: 600;
+  line-height: 55px;
+}
+
+.hero__video {
+  border-radius: 10px;
+}
+
+.explore__btn {
+  background-color: #17bf9d;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.explore__btn:hover {
+  background-color: #139b7a;
+}
